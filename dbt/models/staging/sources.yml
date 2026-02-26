@@ -1,0 +1,99 @@
+version: 2
+
+sources:
+  - name: raw_events
+    description: "Raw event tables written by PySpark Structured Streaming jobs"
+    schema: raw_events
+    tables:
+      - name: orders
+        description: "Raw order events from Kafka orders topic via PySpark"
+        freshness:
+          warn_after: {count: 1, period: hour}
+          error_after: {count: 3, period: hour}
+        loaded_at_field: processed_at
+        columns:
+          - name: order_id
+            description: "Unique order identifier"
+            tests: [not_null]
+          - name: customer_id
+            tests: [not_null]
+          - name: order_total
+            tests:
+              - not_null
+              - dbt_utils.expression_is_true:
+                  expression: ">= 0"
+
+      - name: clickstream
+        description: "User clickstream events from Kafka clickstream topic"
+        freshness:
+          warn_after: {count: 30, period: minute}
+          error_after: {count: 2, period: hour}
+        loaded_at_field: processed_at
+        columns:
+          - name: event_id
+            tests: [not_null, unique]
+          - name: session_id
+            tests: [not_null]
+
+      - name: inventory_updates
+        description: "Inventory change events from Kafka inventory_updates topic"
+        freshness:
+          warn_after: {count: 1, period: hour}
+          error_after: {count: 6, period: hour}
+        loaded_at_field: processed_at
+
+models:
+  - name: stg_orders
+    description: "Cleaned and standardised orders from raw_events.orders"
+    columns:
+      - name: order_id
+        tests: [not_null, unique]
+      - name: order_total
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: order_status
+        tests:
+          - accepted_values:
+              values: ['PLACED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']
+
+  - name: stg_clickstream
+    description: "Cleaned clickstream events"
+    columns:
+      - name: event_id
+        tests: [not_null]
+      - name: funnel_stage
+        tests:
+          - accepted_values:
+              values: ['AWARENESS', 'CONSIDERATION', 'INTENT', 'PURCHASE_INTENT', 'CONVERSION', 'OTHER']
+
+  - name: int_user_sessions
+    description: "Reconstructed user sessions with funnel stage flags"
+    columns:
+      - name: session_id
+        tests: [not_null, unique]
+      - name: session_outcome
+        tests:
+          - accepted_values:
+              values: ['CONVERTED', 'NEAR_CONVERSION', 'HIGH_INTENT', 'BROWSING', 'BOUNCE']
+
+  - name: mart_daily_revenue
+    description: "Daily revenue mart — primary business dashboard table"
+    columns:
+      - name: order_date
+        tests: [not_null]
+      - name: gross_revenue
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: mart_user_behavior
+    description: "Customer lifetime value and segmentation mart"
+    columns:
+      - name: customer_id
+        tests: [not_null, unique]
+      - name: customer_segment
+        tests:
+          - accepted_values:
+              values: ['VIP', 'LOYAL', 'RETURNING', 'NEW']

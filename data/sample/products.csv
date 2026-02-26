@@ -1,0 +1,11 @@
+product_id,product_name,category,base_price,supplier,is_active
+P001,Wireless Headphones,Electronics,89.99,TechSupply Co,true
+P002,Running Shoes,Footwear,124.99,SportGear Ltd,true
+P003,Coffee Maker,Appliances,59.99,HomeGoods Inc,true
+P004,Yoga Mat,Fitness,34.99,FitLife Supply,true
+P005,Desk Lamp,Home Office,44.99,LightWorks Co,true
+P006,Water Bottle,Fitness,24.99,HydroGear,true
+P007,Laptop Stand,Home Office,39.99,DeskTech Inc,true
+P008,Bluetooth Speaker,Electronics,69.99,TechSupply Co,true
+P009,Kitchen Knife Set,Appliances,79.99,CulinaryTools,true
+P010,Sunglasses,Accessories,54.99,StyleCo,true
